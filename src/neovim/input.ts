@@ -2,6 +2,8 @@ import NeovimStore from './store';
 import {inputToNeovim, notifyFocusChanged} from './actions';
 import log from '../log';
 
+const OnDarwin = global.process.platform === 'darwin';
+
 export default class NeovimInput {
     element: HTMLInputElement;
     ime_running: boolean;      // XXX: Local state!
@@ -14,8 +16,10 @@ export default class NeovimInput {
                altKey && keyCode === 18;
     }
 
-    static getVimSpecialChar(code: number, shift: boolean) {
-        switch (code) {
+    // Note:
+    // Workaround when KeyboardEvent.key is not available.
+    static getVimSpecialCharFromKeyCode(key_code: number, shift: boolean) {
+        switch (key_code) {
             case 0:   return 'Nul';
             case 8:   return 'BS';
             case 9:   return 'Tab';
@@ -52,6 +56,121 @@ export default class NeovimInput {
             case 188: return shift ? 'LT' : null;
             default:  return null;
         }
+    }
+
+    // Note:
+    // Special key handling using KeyboardEvent.key.  Thank you @romgrk for the idea.
+    // https://www.w3.org/TR/DOM-Level-3-Events-key/
+    static getVimSpecialCharFromKey(event: KeyboardEvent) {
+        const key = event.key;
+
+        if (key.length === 1) {
+            return key === '<' ? 'LT' : null;
+        }
+
+        if (key[0] === 'F') {
+            // F1, F2, F3, ...
+            return /^F\d+/.test(key) ? key : null;
+        }
+
+        const ctrl = event.ctrlKey;
+        const key_code = event.keyCode;
+
+        switch (key) {
+            case 'Escape': {
+                if (ctrl && key_code !== 27) {
+                    // Note:
+                    // When <C-[> is input
+                    // XXX:
+                    // Keycode of '[' is not available because it is 219 in OS X
+                    // and it is not for '['.
+                    return '[';
+                } else {
+                    return 'Esc';
+                }
+            }
+            case 'Backspace': {
+                if (ctrl && key_code === 72) {
+                    // Note:
+                    // When <C-h> is input (72 is key code of 'h')
+                    return 'h';
+                } else {
+                    return 'BS';
+                }
+            };
+            case 'Tab': {
+                if (ctrl && key_code === 73) {
+                    // Note:
+                    // When <C-i> is input (73 is key code of 'i')
+                    return 'i';
+                } else {
+                    return 'Tab';
+                }
+            };
+            case 'Enter': {  // Note: Should consider <NL>?
+                if (ctrl && key_code === 77) {
+                    // Note:
+                    // When <C-m> is input (77 is key code of 'm')
+                    return 'm';
+                } else {
+                    return 'CR';
+                }
+            };
+            case 'PageUp': return 'PageUp';
+            case 'PageDown': return 'PageDown';
+            case 'End': return 'End';
+            case 'Home': return 'Home';
+            case 'ArrowLeft': return 'Left';
+            case 'ArrowUp': return 'Up';
+            case 'ArrowRight': return 'Right';
+            case 'ArrowDown': return 'Down';
+            case 'Insert': return 'Insert';
+            case 'Delete': return 'Del';
+            case 'Help': return 'Help';
+            case '<': return 'LT';
+            case '': return 'Nul';
+            case 'Unidentified': return null;
+            default: return null;
+        }
+    }
+
+    static getVimSpecialCharInput(event: KeyboardEvent) {
+        const special_char = event.key === undefined ?
+                        NeovimInput.getVimSpecialCharFromKeyCode(event.keyCode, event.shiftKey) :
+                        NeovimInput.getVimSpecialCharFromKey(event);
+        if (!special_char) {
+            return null;
+        }
+
+        let vim_input = '<';
+        if (event.ctrlKey) {
+            vim_input += 'C-';
+        }
+        if (event.altKey) {
+            vim_input += 'A-';
+        }
+        // Note: <LT> is a special case where shift should not be handled.
+        if (event.shiftKey && special_char !== 'LT') {
+            vim_input += 'S-';
+        }
+        vim_input += special_char + '>';
+        return vim_input;
+    }
+
+    static getVimInputFromKeyCode(event: KeyboardEvent) {
+        let vim_input = '<';
+        if (event.ctrlKey) {
+            vim_input += 'C-';
+        }
+        if (event.altKey) {
+            vim_input += 'A-';
+        }
+        // Note: <LT> is a special case where shift should not be handled.
+        if (event.shiftKey) {
+            vim_input += 'S-';
+        }
+        vim_input += String.fromCharCode(event.keyCode).toLowerCase() + '>';
+        return vim_input;
     }
 
     constructor(private store: NeovimStore) {
@@ -100,39 +219,35 @@ export default class NeovimInput {
             return;
         }
 
-        const special_char = NeovimInput.getVimSpecialChar(event.keyCode, event.shiftKey);
-        if (!special_char && NeovimInput.shouldIgnoreOnKeydown(event)) {
+        const special_sequence = NeovimInput.getVimSpecialCharInput(event);
+        if (special_sequence) {
+            this.inputToNeovim(special_sequence, event);
             return;
         }
 
-        let vim_input = '<';
-        if (event.ctrlKey) {
-            vim_input += 'C-';
+        if (NeovimInput.shouldIgnoreOnKeydown(event)) {
+            return;
         }
-        if (event.altKey) {
-            vim_input += 'A-';
+
+        if (event.altKey && OnDarwin && this.store.mode === 'normal') {
+            // Note:
+            //
+            // In OS X, option + {key} sequences input special characters which can't be
+            // input with keyboard normally.  (e.g. option+a -> å)
+            // MacVim accepts the special characters only in insert mode, otherwise <A-x>
+            // is emitted.
+            //
+            this.inputToNeovim(NeovimInput.getVimInputFromKeyCode(event), event);
+            return;
         }
-        // Note: <LT> is a special case where shift should not be handled.
-        if (event.shiftKey && special_char !== 'LT') {
-            vim_input += 'S-';
-        }
-        if (special_char && special_char != "") {
-            vim_input += special_char.toLowerCase();
-        } else if (event.key && 
-                event.key.charCodeAt(0) >= 20 && 
-                event.key != "" && 
-                event.key != "Unidentified") {
-            vim_input += event.key;
-        } else {
-            vim_input += String.fromCharCode(event.keyCode).toLowerCase();
-        }
-        vim_input += '>';
-        this.inputToNeovim(vim_input, event);
+
+        const input = event.key || NeovimInput.getVimInputFromKeyCode(event);
+        this.inputToNeovim(input, event);
     }
     inputToNeovim(input: string, event: Event) {
         this.store.dispatcher.dispatch(inputToNeovim(input));
 
-        log.info('Input to neovim: ' + input);
+        log.info('Input to neovim: ' + JSON.stringify(input));
 
         event.preventDefault();
         event.stopPropagation();
