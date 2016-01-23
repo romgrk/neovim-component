@@ -10,8 +10,7 @@ export default class NeovimInput {
 
     static shouldIgnoreOnKeydown(event: KeyboardEvent) {
         const {ctrlKey, shiftKey, altKey, keyCode} = event;
-        return !ctrlKey && !altKey ||
-               shiftKey && keyCode === 16 ||
+        return shiftKey && keyCode === 16 ||
                ctrlKey && keyCode === 17 ||
                altKey && keyCode === 18;
     }
@@ -64,7 +63,7 @@ export default class NeovimInput {
     static getVimSpecialCharFromKey(event: KeyboardEvent) {
         const key = event.key;
 
-        if (key.length === 1) {
+        if (key.length === 1 && key != "\n") {
             return key === '<' ? 'LT' : null;
         }
 
@@ -107,6 +106,8 @@ export default class NeovimInput {
                     return 'Tab';
                 }
             };
+            case "\r":
+            case "\n":
             case 'Enter': {  // Note: Should consider <NL>?
                 if (ctrl && key_code === 77) {
                     // Note:
@@ -138,7 +139,7 @@ export default class NeovimInput {
         const special_char = event.key === undefined ?
                         NeovimInput.getVimSpecialCharFromKeyCode(event.keyCode, event.shiftKey) :
                         NeovimInput.getVimSpecialCharFromKey(event);
-        if (!special_char) {
+        if (!special_char && !event.ctrlKey && !event.altKey) {
             return null;
         }
 
@@ -153,7 +154,27 @@ export default class NeovimInput {
         if (event.shiftKey && special_char !== 'LT') {
             vim_input += 'S-';
         }
-        vim_input += special_char + '>';
+
+        //((keycode > 47 && keycode < 58)    || // number keys
+        //(keycode > 64 && keycode < 91)    || // letter keys
+        //(keycode > 95 && keycode < 112)   || // numpad keys
+        //(keycode > 185 && keycode < 193)  || // ;=,-./` (in order)
+        //(keycode > 218 && keycode < 223))    // [\]' (in order)
+        if (special_char != null) {
+            vim_input += special_char;
+        } else if (typeof event.key == 'string') {
+            let keycode = event.key.charCodeAt(0);
+            if ((keycode > 47 && keycode < 58)    || // number keys   
+                (keycode > 64 && keycode < 91)    || // letter keys    
+                (keycode > 95 && keycode < 112)   || // numpad keys    
+                (keycode > 185 && keycode < 193)  || // ;=,-./` (in ord
+                (keycode > 218 && keycode < 223)) {  // [\]' (in order)
+                vim_input += event.key;
+            } else {
+                vim_input += String.fromCharCode(event.keyCode).toLowerCase();
+            }
+        }
+        vim_input += '>';
         return vim_input;
     }
 
@@ -219,13 +240,14 @@ export default class NeovimInput {
             return;
         }
 
-        const special_sequence = NeovimInput.getVimSpecialCharInput(event);
-        if (special_sequence) {
-            this.inputToNeovim(special_sequence, event);
+        if (NeovimInput.shouldIgnoreOnKeydown(event)) {
+            log.debug('Input ignore: ' + event.keyCode)
             return;
         }
 
-        if (NeovimInput.shouldIgnoreOnKeydown(event)) {
+        const special_sequence = NeovimInput.getVimSpecialCharInput(event);
+        if (special_sequence) {
+            this.inputToNeovim(special_sequence, event);
             return;
         }
 
@@ -244,17 +266,6 @@ export default class NeovimInput {
         const input = event.key || NeovimInput.getVimInputFromKeyCode(event);
         this.inputToNeovim(input, event);
     }
-    inputToNeovim(input: string, event: Event) {
-        this.store.dispatcher.dispatch(inputToNeovim(input));
-
-        log.info('Input to neovim: ' + JSON.stringify(input));
-
-        event.preventDefault();
-        event.stopPropagation();
-        const t = event.target as HTMLInputElement;
-        t.value = '';
-    }
-
     onInsertNormalChar(event: KeyboardEvent) {
         log.debug('Input event:', event);
 
@@ -270,5 +281,19 @@ export default class NeovimInput {
         }
 
         this.inputToNeovim(t.value, event);
+    }
+    inputToNeovim(input: string, event: KeyboardEvent) {
+        this.store.dispatcher.dispatch(inputToNeovim(input));
+
+        log.info('Input to neovim: ' + JSON.stringify(input) 
+                + "\tkeyCode" + JSON.stringify(event.keyCode)
+                + "\tkey" + JSON.stringify(event.key)
+                + "\tcode" + JSON.stringify(event.code)
+                );
+
+        event.preventDefault();
+        event.stopPropagation();
+        const t = event.target as HTMLInputElement;
+        t.value = '';
     }
 }
