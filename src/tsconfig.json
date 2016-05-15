@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
+    "target": "es5",
     "module": "commonjs",
+    "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
-    "outDir": "./out",
-    "noImplicitAny": true,
-    "target": "es5",
-    "sourceMap": true
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "outDir": "./out"
   },
   "files": [
     "neovim/screen-wheel.ts",
