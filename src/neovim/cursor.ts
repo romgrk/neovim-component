@@ -64,7 +64,7 @@ class CursorBlinkTimer extends EventEmitter {
 export default class NeovimCursor {
     private element: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
-    private delay_timer: number;
+    private delay_timer: any;
     private blink_timer: CursorBlinkTimer;
 
     constructor(private store: NeovimStore, private screen_ctx: CanvasRenderingContext2D) {
@@ -152,7 +152,7 @@ export default class NeovimCursor {
 
         this.element.style.left = x + 'px';
         this.element.style.top = y + 'px';
-        log.debug(`Cursor is moved to (${x}, ${y})`);
+        log.debug(`Cursor: moved to [${line}, ${col}]     (${x}, ${y})`);
         this.redraw();
         this.blink_timer.reset();
     }

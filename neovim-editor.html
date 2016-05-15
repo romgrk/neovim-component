@@ -1,16 +1,24 @@
-<dom-module id="neovim-editor">
-  <template>
-    <style>
+<html>
+  <head>
+    <meta content="text/html; charset=windows-1252" http-equiv="content-type">
+  </head>
+  <body><dom-module id="neovim-editor"> <template>
+        <style>
       :host {
         position: relative;
+        display: flex;
         min-width: 0px;
-        min-height: 0px;
+        min-height: 80%;
+        background-color: rgba(100,50,255,0.4);
+        -webkit-font-smoothing: antialiased;
       }
       .neovim-wrapper {
+        flex: 1;
+        margin: 10px;
         padding: 0px;
-        margin: 0px;
-        width: 100%;
-        height: 100%;
+        position: relative;
+        /*width: 40%;
+        height: 90%;*/
       }
       .neovim-cursor {
         padding: 0px;
@@ -18,25 +26,99 @@
         position: absolute;
       }
       .neovim-input {
+        position: absolute;
+        top: 0px; left: 0px;
+        padding: 0px; border: 0px;
+        outline: none;
+        vertical-align: middle;
         width: 1px;
         color: transparent;
         background-color: transparent;
-        padding: 0px;
-        border: 0px;
-        outline: none;
-        vertical-align: middle;
-        position: absolute;
-        top: 0px;
-        left: 0px;
       }
-    </style>
-    <div class="neovim-wrapper">
-      <canvas class="neovim-canvas" width$="[[width]]" height$="[[height]]"></canvas>
-      <canvas class="neovim-cursor">
-      </canvas>
-      <input class="neovim-input" autocomplete="off" autofocus />
-    </div>
-  </template>
-</dom-module>
+      .neovim-canvas {
+        opacity: 0.99;
+      }
+      .neovim-display {
+        flex: 1;
+        position: relative;
+        display: inline-block;
+        margin: 10px;
+        padding: 0px;
+        overflow: hidden;
+        text-rendering: optimizeLegibility;
+        /* margin: 0px; padding: 0px;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        transform: translateX(110%);
+        line-height: initial; */
+      }
+      .border {
+        border: 4px solid rgb(100,50,255); }
 
-<script src="./build/index.js"></script>
+      .overlay {
+        position: absolute;
+        display: inline-block;
+        pointer-events: none;
+      }
+
+      .scroll-region {
+        border: 2px solid rgb(100,50,255);
+      }
+
+      .grid {
+        position: absolute;
+        top: 0; left: 0;
+        height: 100%; width: 100%;
+        background-image:
+          -webkit-linear-gradient(0deg, rgba(0,0,0,0) 95%, rgba(56,255,255,0.3) 100%),
+          -webkit-linear-gradient(top,  rgba(0,0,0,0) 95%, rgba(56,255,255,0.3) 100%);
+        background-size: 60px 100%, 21px;
+        background-position: 0px 0px;
+        pointer-events: none;
+      }
+
+      .container { }
+
+      .line {
+        position: relative;
+        display: block;
+
+        min-height:  inherit !important;
+        font-size:   inherit;
+        font-family: inherit;
+        line-height: inherit;
+      }
+      /* .line:after {
+        display: inline-block;
+        position: absolute;
+        top: 0; left: 0;
+        content: "";
+        width: 100%; height: 1px;
+        background-color: rgba(100,50,255,0.3);
+      } */
+
+      .chars {
+        /* border-right: 1px solid blue; */
+        white-space: pre;
+        font-size:   inherit;
+        font-family: inherit;
+        line-height: inherit;
+        min-height:  inherit;
+        height:      auto;
+      }
+
+    </style>
+      <div  class="neovim-wrapper">
+        <canvas  class="neovim-canvas" width$="[[width]]" height$="[[height]]"></canvas>
+        <canvas  class="neovim-cursor"></canvas>
+        <input   class="neovim-input"
+        autocomplete="off"
+        autofocus="" /></div>
+
+      <div class="neovim-display"></div>
+
+      </template>
+    </dom-module>
+    <script src="./build/index.js"></script>
+  </body>
+</html>
