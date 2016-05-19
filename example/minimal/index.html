@@ -15,7 +15,16 @@
       height: 100%; width: 100%;
       margin: 0px; padding: 0px;
       overflow: hidden;
-      background-color: #151515;
+      background-color: grey;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    neovim-editor {
+      flex-grow: 1;
     }
 
     .info-bar {
@@ -45,10 +54,10 @@
   </div>
 
   <neovim-editor id="neovim"
-    font="'Monaco','Hasklig',monospace"
+    font="'Hasklig',monospace"
     font-size="14"
-    line-height="1.5"
   ></neovim-editor>
+  <!--line-height="1.5"-->
   <!--argv='["-u","/home/romgrk/modules/neovim-component/nvimrc.vim"]'-->
 
 </body>
@@ -71,10 +80,9 @@
       }
     });
 
-    global.st = editor.store;
+    global.store = editor.store;
     global.screen = editor.screen;
-    global.xt = editor.screen.txt;
-    global.lines = editor.screen.txt.container.children;
+    global.lines = editor.screen.container.children;
 
   });
   editor.on('quit', function() {
@@ -84,7 +92,7 @@
     shell.beep();
   });
   editor.store.on('cursor', function() {
-    document.getElementById('cursor-position').textContent = JSON.stringify(editor.screen.store.cursor);
+    document.getElementById('cursor-position').textContent = JSON.stringify(editor.store.cursor);
     document.getElementById('editor-size').textContent = JSON.stringify(editor.store.size);
   });
   editor.store.on('title-changed', function() {

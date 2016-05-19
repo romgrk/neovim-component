@@ -1,6 +1,7 @@
 import {EventEmitter} from 'events';
 import Process from './neovim/process';
 import Screen from './neovim/screen';
+import TextDisplay from './neovim/display';
 import NeovimStore from './neovim/store';
 import {
     updateFontPx,
@@ -15,7 +16,7 @@ import {Nvim} from 'promised-neovim-client';
 
 export default class Neovim extends EventEmitter {
     process: Process;
-    screen: Screen;
+    screen: Screen | TextDisplay;
     store: NeovimStore;
 
     constructor(
@@ -45,9 +46,9 @@ export default class Neovim extends EventEmitter {
         this.process = new Process(this.store, command, argv);
     }
 
-    attachCanvas(width: number, height: number, canvas: HTMLCanvasElement) {
+    attachDisplay(width: number, height: number, display: HTMLElement) {
         this.store.dispatcher.dispatch(updateScreenSize(width, height));
-        this.screen = new Screen(this.store, canvas);
+        this.screen = new TextDisplay(this.store, display);
         const {lines, cols} = this.store.size;
         this.process
             .attach(lines, cols)
@@ -55,6 +56,10 @@ export default class Neovim extends EventEmitter {
                 this.process.client.on('disconnect', () => this.emit('quit'));
                 this.emit('process-attached');
             }).catch(err => this.emit('error', err));
+    }
+
+    attachCanvas(width: number, height: number, canvas: HTMLCanvasElement) {
+        this.screen = new Screen(this.store, canvas);
     }
 
     quit() {

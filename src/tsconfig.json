@@ -15,6 +15,7 @@
     "neovim/input.ts",
     "neovim/cursor.ts",
     "neovim/actions.ts",
+    "neovim/display.ts",
     "neovim/store.ts",
     "neovim/screen.ts",
     "neovim/process.ts",

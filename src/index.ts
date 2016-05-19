@@ -72,23 +72,22 @@ Polymer({
     },
 
     attached: function() {
-        const canvas = document.querySelector('.neovim-canvas') as HTMLCanvasElement;
+        //const canvas = document.querySelector('.neovim-canvas') as HTMLCanvasElement;
         const display = document.querySelector('.neovim-display') as HTMLDivElement;
-        const width = this.width || canvas.parentElement.offsetWidth;
-        const height = this.height || canvas.parentElement.offsetHeight;
-        this.editor.display = display;
-        this.editor.attachCanvas(width, height, canvas);
+        const width  = this.width  || display.offsetWidth;
+        const height = this.height || display.offsetHeight;
+        //this.editor.display = display;
+        this.editor.attachDisplay(width, height, display);
+        //this.editor.attachCanvas(width, height, canvas);
         this.resize_listener = window.addEventListener('resize', () => {
             if (this.resizeHandler !== null) {
                 clearTimeout(this.resizeHandler);
             }
-            this.resizeHandler = setTimeout(
-                    () => {
-                        this.editor.screen.checkShouldResize();
-                        this.resizeHandler = null;
-                    },
-                    100
-                );
+            this.resizeHandler = setTimeout( () => {
+                this.editor.screen.checkShouldResize();
+                this.resizeHandler = null;
+            },
+            100);
         });
     },
 

@@ -1,84 +1,107 @@
 <html>
   <head>
     <meta content="text/html; charset=windows-1252" http-equiv="content-type">
+    <style type="text/css">
+
+@keyframes blink {
+    0% {
+      opacity: 1.0;
+      /*animation-timing-function: ease-in;*/
+    }
+    49% {
+      opacity: 1.0;
+    }
+    50% {
+      opacity: 0.0;
+      animation-timing-function: ease-in-out;
+    }
+    99% {
+      opacity: 0.0;
+    }
+    100% {
+      opacity: 1.0;
+    }
+}
+
+.blink {
+    animation-name: blink;
+    animation-duration: 1.2s;
+    animation-iteration-count: infinite;
+}
+
+.overlay {
+  position: absolute;
+  pointer-events: none;
+}
+
+    </style>
   </head>
-  <body><dom-module id="neovim-editor"> <template>
+  <body>
+    <dom-module id="neovim-editor">
+      <template>
         <style>
       :host {
         position: relative;
-        display: flex;
-        min-width: 0px;
-        min-height: 80%;
-        background-color: rgba(100,50,255,0.4);
-        -webkit-font-smoothing: antialiased;
-      }
-      .neovim-wrapper {
-        position: absolute;
-        /*flex: 1;
-        margin: 10px;
-        padding: 0px;
-        width: 40%;
-        height: 90%;*/
-      }
-      .neovim-cursor {
-        padding: 0px;
-        margin: 0px;
-        position: absolute;
+        display: inline-block;
+        width:  100%;
+        height: 100%;
       }
       .neovim-input {
         position: absolute;
         top: 0px; left: 0px;
+        z-index: -1;
+        width: 1px;
         padding: 0px; border: 0px;
         outline: none;
-        vertical-align: middle;
-        width: 1px;
         color: transparent;
         background-color: transparent;
       }
-      .neovim-canvas {
-        opacity: 0.99;
-      }
       .neovim-display {
-        flex: 1;
         position: relative;
         display: inline-block;
         overflow: hidden;
-        text-rendering: optimizeLegibility;
-        /*margin: 10px; padding: 0px;
-        margin: 0px; padding: 0px;
-        top: 0; left: 0;
         width: 100%; height: 100%;
-        transform: translateX(110%);
-        line-height: initial; */
       }
-      .border {
-        border: 4px solid rgb(100,50,255); }
 
-      .overlay {
+      .neovim-cursor {
         position: absolute;
-        display: inline-block;
+        padding: 0px; margin: 0px;
         pointer-events: none;
+        background-color: rgba(255,45,250,0.4);
       }
 
-      .grid {
-        position: absolute;
-        top: 0; left: 0;
-        height: 100%; width: 100%;
-        background-image:
-          -webkit-linear-gradient(0deg, rgba(0,0,0,0) 95%, rgba(56,255,255,0.3) 100%),
-          -webkit-linear-gradient(top,  rgba(0,0,0,0) 95%, rgba(56,255,255,0.3) 100%);
-        background-size: 60px 100%, 21px;
-        background-position: 0px 0px;
-        pointer-events: none;
+      .neovim-cursor.focused {
+        border: none;
+      }
+      .neovim-cursor:not(.focused) {
+        border: 1px solid white;
+        animation: none !important;
+      }
+      .neovim-cursor.normal-mode {
+        background-color: rgba(255,255,250,0.4);
+      }
+      .neovim-cursor.visual-mode {
+        background-color: rgba(255,255,250,0.4);
+        animation: none !important;
+      }
+      .neovim-cursor.insert-mode {
+        border-left:      1px solid white;
+        background-color: transparent;
       }
 
-      .container { }
+      .container {
+        overflow: hidden;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        text-shadow: 1px 1px rgba(0,0,0,0.2);
+      }
 
       .line {
         position: relative;
         display: block;
         overflow: hidden;
 
+        white-space: nowrap;
         min-height:  inherit !important;
         font-size:   inherit;
         font-family: inherit;
@@ -87,11 +110,7 @@
 
       .chars {
         display: inline-block;
-        /* border-right: 1px solid blue;
-        height:      auto;
-        vertical-align: middle;*/
         white-space: pre;
-
         font-size:   inherit;
         font-family: inherit;
         line-height: inherit;
@@ -99,17 +118,15 @@
       }
     </style>
 
-      <div  class="neovim-wrapper">
-      	<canvas  class="neovim-canvas" width$="[[width]]" height$="[[height]]"></canvas>
-      	<canvas  class="neovim-cursor"></canvas>
-        <input   class="neovim-input"
-        autocomplete="off"
-        autofocus="" /></div>
-
-      <div class="neovim-display"></div>
+      <div class="neovim-display">
+        <input class="neovim-input"
+              autocomplete="off"
+              autofocus="" />
+      </div>
 
       </template>
     </dom-module>
     <script src="./build/index.js"></script>
   </body>
+
 </html>

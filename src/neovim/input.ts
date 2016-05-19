@@ -197,7 +197,7 @@ export default class NeovimInput {
         this.element.addEventListener('input', this.onInputText.bind(this));
         //this.element.addEventListener('blur', this.onBlur.bind(this));
         this.element.addEventListener('focus', this.onFocus.bind(this));
-        this.store.on('cursor', this.updateElementPos.bind(this));
+        //this.store.on('cursor', this.updateElementPos.bind(this));
 
         this.focus();
     }
