@@ -13,11 +13,11 @@
         -webkit-font-smoothing: antialiased;
       }
       .neovim-wrapper {
-        flex: 1;
+        position: absolute;
+        /*flex: 1;
         margin: 10px;
         padding: 0px;
-        position: relative;
-        /*width: 40%;
+        width: 40%;
         height: 90%;*/
       }
       .neovim-cursor {
@@ -42,11 +42,10 @@
         flex: 1;
         position: relative;
         display: inline-block;
-        margin: 10px;
-        padding: 0px;
         overflow: hidden;
         text-rendering: optimizeLegibility;
-        /* margin: 0px; padding: 0px;
+        /*margin: 10px; padding: 0px;
+        margin: 0px; padding: 0px;
         top: 0; left: 0;
         width: 100%; height: 100%;
         transform: translateX(110%);
@@ -59,10 +58,6 @@
         position: absolute;
         display: inline-block;
         pointer-events: none;
-      }
-
-      .scroll-region {
-        border: 2px solid rgb(100,50,255);
       }
 
       .grid {
@@ -82,35 +77,31 @@
       .line {
         position: relative;
         display: block;
+        overflow: hidden;
 
         min-height:  inherit !important;
         font-size:   inherit;
         font-family: inherit;
         line-height: inherit;
       }
-      /* .line:after {
-        display: inline-block;
-        position: absolute;
-        top: 0; left: 0;
-        content: "";
-        width: 100%; height: 1px;
-        background-color: rgba(100,50,255,0.3);
-      } */
 
       .chars {
-        /* border-right: 1px solid blue; */
+        display: inline-block;
+        /* border-right: 1px solid blue;
+        height:      auto;
+        vertical-align: middle;*/
         white-space: pre;
+
         font-size:   inherit;
         font-family: inherit;
         line-height: inherit;
-        min-height:  inherit;
-        height:      auto;
+        min-height:  inherit !important;
       }
-
     </style>
+
       <div  class="neovim-wrapper">
-        <canvas  class="neovim-canvas" width$="[[width]]" height$="[[height]]"></canvas>
-        <canvas  class="neovim-cursor"></canvas>
+      	<canvas  class="neovim-canvas" width$="[[width]]" height$="[[height]]"></canvas>
+      	<canvas  class="neovim-cursor"></canvas>
         <input   class="neovim-input"
         autocomplete="off"
         autofocus="" /></div>

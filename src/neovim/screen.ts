@@ -46,13 +46,13 @@ function splitNodeAt (node: Node, start: number, end: number) {
               _([end]), _(node.textContent));
 }
 
-function getFontSize(e: HTMLElement) {
+function getFontSize(e: HTMLElement): ClientRect {
     const o = document.createElement('span');
     o.style.font = e.style.font;
     o.style.position = 'absolute';
     o.style.whiteSpace = 'nowrap';
     o.style.visibility = 'hidden';
-    o.innerText = 'm';
+    o.innerText = 'o';
     e.appendChild(o);
     let r = o.getBoundingClientRect();
     o.remove()
@@ -63,59 +63,65 @@ export class TextDisplay {
     // store: NeovimStore,
     // element: HTMLElement;
     container: HTMLElement;
-    overlay: HTMLElement;
     pointer: HTMLElement;
-    grid: HTMLElement;
+    cursor: HTMLElement;
+    //grid: HTMLElement;
     // cursor: Cursor;
     widthPx: number;
     heightPx: number;
 
     constructor(private store: NeovimStore, public element: HTMLElement) {
-
         this.container = document.createElement('div');
         this.container.classList.add('container', 'neovim-editor');
         this.element.appendChild(this.container);
 
-        this.grid = document.createElement('div');
-        this.grid.classList.add('grid', 'neovim-editor');
-        this.element.appendChild(this.grid);
-
-        this.overlay = document.createElement('div');
-        this.overlay.classList.add('scroll-region', 'overlay', 'neovim-editor');
-        this.element.appendChild(this.overlay);
+        //this.grid = document.createElement('div');
+        //this.grid.classList.add('grid', 'neovim-editor');
+        //this.element.appendChild(this.grid);
 
         this.pointer = document.createElement('div');
         this.pointer.classList.add('overlay', 'neovim-editor');
-        this.pointer.style.height   = '1em';
-        this.pointer.style.width    = '1em';
-        //this.pointer.style.content  = '';
-        //this.pointer.style.color    = '#efefef';
         this.pointer.style.border   = '1px solid rgb(100,50,255)';
-        //this.pointer.style.backgroundColor = 'rgba(100,50,255,0.5)';
-        this.element.appendChild(this.pointer);
+        element.appendChild(this.pointer);
 
-        this.store.on('put',       this.insertText.bind(this));
+        this.cursor = document.createElement('div');
+        this.cursor.classList.add('cursor', 'overlay', 'neovim-editor');
+        this.cursor.style.height   = '1em';
+        this.cursor.style.width    = '1em';
+        this.cursor.style.backgroundColor = 'rgba(100,50,200,0.5)';
+        element.appendChild(this.cursor);
+        //this.cursor.style.color    = '#efefef';
+        //this.cursor.style.border   = '1px solid rgb(100,50,255)';
+
+        // FIXME !
+        this.store.on('cursor',    this.updateCursor.bind(this));
+        this.store.on('mode',      this.updateMode.bind(this));
+
+        this.store.on('put',       this.insertText.bind(this)     );
         this.store.on('clear-eol', () => this.clearTilEndOfLine() );
-        this.store.on('clear-all', () => this.clearDisplay());
+        this.store.on('clear-all', () => this.clearDisplay()      );
+        this.store.on('update-fg', () => this.updateStyle()       );
+        this.store.on('update-sp', () => this.updateStyle()       );
         this.store.on('update-bg', () => {
             this.clearDisplay(); // Note: 'update-bg' clears all texts in screen.
-            this.container.style.backgroundColor = this.store.bg_color;
+            this.updateStyle();
         });
-        this.store.on('screen-scrolled', this.scroll.bind(this));
-        //this.store.on('scroll-region-updated', this.updateRegionOverlay.bind(this));
         this.store.on('line-height-changed', () => {
             this.changeFontSize(this.store.font_attr.specified_px) });
 
+        //this.store.on('scroll-region-updated', this.updateRegionOverlay.bind(this));
+        this.store.on('screen-scrolled', this.scroll.bind(this));
+
         //element.addEventListener('click', this.focus.bind(this));
         element.addEventListener('wheel',     this.onWheel.bind(this));
-        //element.addEventListener('mousedown', this.onMouseDown.bind(this));
-        //element.addEventListener('mouseup',   this.onMouseUp.bind(this));
+        element.addEventListener('mousedown', this.onMouseDown.bind(this));
+        element.addEventListener('mouseup',   this.onMouseUp.bind(this));
         element.addEventListener('mousemove', this.onMouseMove.bind(this));
 
-        //this.pixel_ratio = 1;
         //this.cursor = new Cursor(this.store, this.ctx);
         //this.input  = new Input(this.store);
         this.changeFontSize(this.store.font_attr.specified_px);
+
         this.updateStyle();
         this.adjustLines();
     }
@@ -124,35 +130,22 @@ export class TextDisplay {
         this.store.dispatcher.dispatch(A.wheelScroll(e));
     }
     onMouseDown(e: MouseEvent) {
+        const pos = this.getPositionFrom(e);
         this.store.dispatcher.dispatch(A.dragStart(e));
     }
     onMouseUp(e: MouseEvent) {
+        const pos = this.getPositionFrom(e);
         this.store.dispatcher.dispatch(A.dragEnd(e));
     }
     onMouseMove(event: MouseEvent) {
 
-        //if (event.buttons !== 0)
-            //this.store.dispatcher.dispatch(A.dragUpdate(event));
+        const pos = this.getPositionFrom(event);
 
-        const {clientX, clientY} = event;
+        if (event.buttons !== 0)
+            this.store.dispatcher.dispatch(A.dragUpdate(event));
 
-        const o = this.origin;
-
-        let x = clientX - o[0];
-        let y = clientY - o[1];
-
-        //log.debug('O()',  JSON.stringify(o),
-            //'clientX/Y:', JSON.stringify([clientX, clientY]),
-            //'x/y:', JSON.stringify([x, y]));
-
-        const line = Math.floor(y / this.heightPx);
-        const col  = Math.floor(x / this.widthPx);
-
-        let posLabel = document.getElementById('mouse-position');
-        posLabel.textContent = JSON.stringify([line, col]);
-
-        this.pointer.style.top  = (line * this.heightPx) + 'px';
-        this.pointer.style.left = (col *  this.widthPx)  + 'px';
+        this.pointer.style.top  = (pos.line * this.heightPx) + 'px';
+        this.pointer.style.left = (pos.col *  this.widthPx)  + 'px';
     }
 
     get line(): Node {
@@ -185,7 +178,7 @@ export class TextDisplay {
         const line = this.container.children.item(n);
 
         if (line.childElementCount == 0)
-            line.appendChild(this.newTag(null, null));
+            line.appendChild(this.newSpan(null, null));
 
         return line;
     }
@@ -204,6 +197,23 @@ export class TextDisplay {
             line: Math.floor(y * this.heightPx),
             col:  Math.floor(x * this.widthPx),
         };
+    }
+
+    getPositionFrom (event: MouseEvent) {
+        const {clientX, clientY} = event;
+        const o = this.origin;
+
+        let x = clientX - o[0];
+        let y = clientY - o[1];
+
+        const line = Math.floor(y / this.heightPx);
+        const col  = Math.floor(x / this.widthPx);
+
+        let e = event as any;
+        e.line = line;
+        e.col  = col;
+
+        return {line, col};
     }
 
     clearDisplay() {
@@ -242,6 +252,12 @@ export class TextDisplay {
 
         while (node.nextSibling)
             lineNode.removeChild(node.nextSibling);
+
+        if (lineNode.textContent.length < this.store.size.cols) {
+            let width = this.store.size.cols - lineNode.textContent.length;
+            log.debug('\t: (missing):', width);
+            lineNode.appendChild(this.newSpan(" ".repeat(width), null));
+        }
     }
 
     clearEmptyNodes(line?: Node): void {
@@ -287,17 +303,12 @@ export class TextDisplay {
         if (aNode == null && bNode == null) {
 
             let spaces = " ".repeat(start - currentLine.textContent.length);
-            const fillNode = this.newTag(spaces, null)
+            const fillNode = this.newSpan(spaces, null)
             currentLine.appendChild(fillNode);
 
             nextNode = null;
 
         } else if (bNode == aNode) {
-            //const aText = aNode.textContent;
-            //const beforeNode = aNode.cloneNode();
-            //beforeNode.textContent = aText.slice(0, ra.offset);
-            //nextNode.textContent   = aText.slice(rb.offset);
-            //currentLine.insertBefore(beforeNode, nextNode);
             log.debug('\t: aNode == bNode;', ra, rb);
             splitNodeAt(aNode, ra.offset, rb.offset);
             nextNode = aNode;
@@ -329,19 +340,68 @@ export class TextDisplay {
             nextNode = null;
         }
 
-        const newNode = this.newTag(text);
+        const newNode = this.newSpan(text);
         currentLine.insertBefore(newNode, nextNode);
 
         log.debug('\t: INSERT', _(text), _(this.position),
                   '\t: LINE', _(currentLine.textContent), currentLine.textContent.length);
 
-        if (currentLine.textContent.length < this.store.size.cols) {
-            //const fillNode = this.newTag(null, null);
-            //currentLine.appendChild(fillNode);
-            log.debug('\t: (missing):', currentLine.textContent.length);
-        }
-
         this.clearEmptyNodes();
+
+        if (currentLine.textContent.length < this.store.size.cols) {
+            let width = this.store.size.cols - currentLine.textContent.length;
+            log.debug('\t: (missing):', width);
+            currentLine.appendChild(this.newSpan(" ".repeat(width), null));
+        }
+    }
+
+    changeFontSize(size_px: number) {
+        this.container.style.fontSize = size_px + 'px';
+
+        const heightPx = this.store.line_height * size_px;
+        const rect     = getFontSize(this.container);
+        const widthPx  = rect.width;
+
+        this.widthPx  = widthPx;
+        this.heightPx = heightPx;
+
+        this.store.dispatcher.dispatch(A.updateFontPx(size_px));
+        this.store.dispatcher.dispatch(
+            A.updateFontSize(
+                widthPx,
+                heightPx,
+                widthPx,
+                heightPx
+            )
+        );
+        //this.updateStyle();
+    }
+
+    changeLineHeight(new_value: number) {
+        this.element.style.lineHeight = new_value.toString();
+        //this.store.dispatcher.dispatch(A.updateLineHeight(new_value));
+
+        //this.store.line_height = this.store.line_height * new_value + 'px'
+        //this.display.style.lineHeight =
+            //this.store.line_height * specified_px + 'px';
+        this.updateStyle();
+    }
+
+    private splitNode(node: Text, offset: number): Node {
+        log.debug('splitNode()', offset, _(node.textContent))
+        const parent       = node.parentNode;
+
+        if (offset == 0)
+            return parent;
+
+        const beforeParent = parent.cloneNode();
+        const beforeText   = node.splitText(offset);
+
+        parent.removeChild(beforeText);
+        beforeParent.appendChild(beforeText);
+        parent.parentNode.insertBefore(beforeParent, parent);
+
+        return beforeParent;
     }
 
     getRange(container: Element, start: number, end: number) {
@@ -349,22 +409,38 @@ export class TextDisplay {
         const range = document.createRange();
         range.selectNodeContents(container);
 
-        let charIndex = 0,
+        let charIndex  = 0,
             foundStart = false,
-            foundEnd = false,
+            foundEnd   = false,
             lastText: Node;
 
+        const self = this;
         function traverseTextNodes(node: Node) {
             if (node.nodeType == 3) {
                 lastText = node;
                 let len = node.textContent.length;
 
                 if (!foundStart && ((charIndex + len) > start)) {
-                    range.setStart(node, start - charIndex);
+                    let offset = start - charIndex;
+                    log.debug('getRange(): START:', {start, end, charIndex, offset})
+                    if (offset != 0)
+                        self.splitNode(<Text>node, offset);
+                    range.setStartBefore(node.parentNode);
                     foundStart = true;
                 }
+
                 if (foundStart && ((charIndex + len) > end)) {
-                    range.setEnd(node, end - charIndex);
+                    let offset = end - charIndex + 1;
+
+                    log.debug('getRange(): END:', {end, charIndex, offset})
+
+                    let endNode = node.parentNode;
+
+                    if (offset != len)
+                        endNode = self.splitNode(<Text>node, offset);
+
+                    range.setEndAfter(endNode);
+
                     throw stop;
                 }
 
@@ -388,18 +464,153 @@ export class TextDisplay {
         return range;
     }
 
+    getScrollRegionRanges(): Range[] {
+        const {top, bottom,
+               left, right} = this.store.scroll_region;
+
+        const ranges: Range[] = [];
+
+        log.debug('getScrollRegionRanges():', this.store.scroll_region);
+        for (let i = top; i <= bottom; i++) {
+            let line = this.getLine(i) as Element;
+            ranges.push(
+                this.getRange(line, left, right));
+        }
+
+        return ranges;
+    }
+
+    /*  delta > 0 => screen goes up
+     *  delta < 0 => screen goes down
+     */
+    scroll(delta: number) {
+        const {top, bottom,
+            left, right} = this.store.scroll_region;
+        const width = right - left;
+
+        const ranges = this.getScrollRegionRanges();
+        const fragments = ranges.map(r => r.extractContents());
+
+        log.debug(': SCROLL', _(this.store.scroll_region));
+
+        for (let i = 0; i < Math.abs(delta); i++) {
+
+            let frag = document.createDocumentFragment();
+            //frag.appendChild(document.createTextNode(""));
+            frag.appendChild(this.newSpan(" ".repeat(width), null));
+
+            if (delta > 0) {
+                fragments.shift();
+                fragments.push(frag);
+            } else {
+                fragments.pop();
+                fragments.unshift(frag);
+            }
+        }
+
+        for (let i = 0; i < ranges.length; i++) {
+            let range = ranges[i];
+            range.insertNode(fragments[i]);
+            this.clearEmptyNodes(range.commonAncestorContainer);
+        }
+    }
+
+    updateStyle () {
+        const {
+            fg_color,
+            bg_color,
+            font_attr} = this.store;
+        const {specified_px} = font_attr;
+
+        //this.widthPx  = font_attr.width;
+        const h = this.store.line_height * specified_px;
+
+        this.container.style.color           = fg_color;
+        this.container.style.backgroundColor = bg_color;
+        this.container.style.fontFamily      = font_attr.face;
+        this.container.style.fontSize        = specified_px + 'px';
+        this.container.style.lineHeight      = h + 'px';
+        this.container.style.minHeight       = h + 'px';
+
+        const rect = getFontSize(this.container);
+        //const heightPx = ;
+        const widthPx  = rect.width;
+
+        this.pointer.style.width  = font_attr.width  + 'px';
+        this.pointer.style.height = font_attr.height + 'px';
+        this.cursor.style.width   = font_attr.width  + 'px';
+        this.cursor.style.height  = font_attr.height + 'px';
+        //this.grid.style.backgroundSize = `${widthPx}px, ${heightPx}px ${heightPx}px`;
+    }
+
+    updateMode() {
+        //const {line, col} = this.store.cursor;
+        const mode = this.store.mode;
+        for (let className in this.cursor.classList) {
+            if (className.indexOf('-mode') != -1) {
+                this.cursor.classList.remove(className);
+                break;
+            }
+        }
+        this.cursor.classList.add(mode + '-mode');
+        log.debug("updateMode:", _(mode), this.cursor.classList);
+    }
+
+    updateCursor() {
+        const {line, col} = this.store.cursor;
+        this.cursor.style.top  = (line * this.heightPx) + 'px';
+        this.cursor.style.left = (col *  this.store.font_attr.width)  + 'px';
+    }
+
+    resize (width_px: number, height_px: number) {
+        //const h = height_px * this.pixel_ratio;
+        //const w = width_px * this.pixel_ratio;
+        //const lines = Math.floor(h / this.store.font_attr.draw_height);
+        //const cols  = Math.floor(w / this.store.font_attr.draw_width);
+        //this.resizeImpl( lines, cols, w, h);
+    }
+
+    adjustLines (lines = this.store.size.lines) {
+        const children = this.container.children;
+
+        while (children.length < lines) {
+
+            let lineNode = document.createElement('div');
+            lineNode.classList.add('line', 'neovim-editor');
+
+            let span = this.newSpan(null, null);
+
+            lineNode.appendChild(span);
+            this.container.appendChild(lineNode);
+
+            //fillLine(lineNode, cols);
+            log.debug('adjustLines(): added lineNode',
+                      lineNode.textContent.length,
+                      children.length);
+        }
+
+        while (children.length > lines) {
+            let node = this.container.lastChild;
+            this.container.removeChild(node);
+        }
+
+        log.debug('adjustLines(): final children.length:',
+                  children.length);
+        console.assert(children.length == lines);
+    }
+
     private getNodeAt(lineNode: Node, col: number): TextRange {
         const line = lineNode as HTMLDivElement;
 
-        let accumulator = 0;
+        let charIndex = 0;
         let node = line.firstChild;
         while (node != null) {
             let len = node.textContent.length;
 
-            if (accumulator + len >= col)
+            if (charIndex + len >= col)
                 break;
 
-            accumulator += len;
+            charIndex += len;
             node = node.nextSibling;
         }
 
@@ -407,26 +618,18 @@ export class TextDisplay {
 
         return {
             node: node,
-            offset: col - accumulator,
+            offset: col - charIndex,
             start: col,
             end: col + len,
             length: len
         };
     }
 
-    private splitNode(node: Text, offset: number): Node {
-        const parent = node.parentNode;
-        const beforeParent = parent.cloneNode();
-        const beforeText = node.splitText(offset);
-
-        parent.removeChild(beforeText);
-        beforeParent.appendChild(beforeText);
-        parent.parentNode.insertBefore(beforeParent, parent);
-
-        return beforeParent;
+    private getCharNodeAt (line: Node, col: number): Node {
+        return this.getRange(<Element>line, col, col + 1).startContainer;
     }
-    
-    private newTag(text = "", font_attr = this.store.font_attr): HTMLSpanElement {
+
+    private newSpan(text = "", font_attr = this.store.font_attr): HTMLElement {
 
         if (text == null)
             text = " ".repeat(this.store.size.cols);
@@ -457,194 +660,13 @@ export class TextDisplay {
         return span;
     }
 
-    private deleteNodesInRange(line: HTMLDivElement, start: number, end: number): Node {
-        let ra = this.getNodeAt(line, start);
-        let rb = this.getNodeAt(line, end);
-
-        //if (ra.node == rb.node) {
-            //let span = ra.node;
-            //let txt = span.textContent;
-            //let len = end - start;
-
-            //let before = txt.slice(0, ra.offset);
-            //let after  = txt.slice(ra.offset + end);
-
-            //return this.splitNode(span, start);
-
-        //}
-
-        //while (ra.node.nextElementSibling != rb.node) {
-            //ra.node.nextElementSibling.remove();
-        //}
-
-        let span_a = ra.node as HTMLSpanElement;
-        //span_a.textContent = span_a.textContent.substring(0, start - ra.pos[0]);
-
-        if (rb.node != null) {
-            let span_b = rb.node as HTMLSpanElement;
-            //span_b.textContent =
-                //span_b.textContent.substring(end - rb.pos[0]);
-        }
-
-        return rb.node;
-    }
-
-    changeFontSize(size_px: number) {
-        // this.store.dispatcher.dispatch(A.updateFontPx(specified_px));
-        this.element.style.fontSize = size_px + 'px';
-
-        this.updateStyle();
-    }
-
-    changeLineHeight(new_value: number) {
-        this.element.style.lineHeight = new_value.toString();
-        //this.store.dispatcher.dispatch(A.updateLineHeight(new_value));
-
-        //this.store.line_height = this.store.line_height * new_value + 'px'
-        //this.display.style.lineHeight =
-            //this.store.line_height * specified_px + 'px';
-        this.updateStyle();
-    }
-
-    getScrollRegionRanges(): Range[] {
-        const {top, bottom,
-               left, right} = this.store.scroll_region;
-
-        const ranges: Range[] = [];
-
-        for (let i = top; i < bottom; i++) {
-            let line = this.getLine(i) as Element;
-            ranges.push(
-                this.getRange(line, left, right));
-        }
-
-        return ranges;
-    }
-    
-    /*  delta > 0 => screen goes up
-     *  delta < 0 => screen goes down
-     */
-    scroll(delta: number) {
-        const {top, bottom,
-            left, right} = this.store.scroll_region;
-        const width = right - left;
-
-        const ranges = this.getScrollRegionRanges();
-        const fragments = ranges.map(r => r.extractContents());
-
-        log.debug(': SCROLL', _(this.store.scroll_region));
-
-        for (let i = 0; i < Math.abs(delta); i++) {
-
-            let frag = document.createDocumentFragment();
-            frag.appendChild(document.createTextNode(""));
-            //frag.appendChild(this.newTag(" ".repeat(width), null));
-
-            if (delta > 0) {
-                fragments.shift();
-                fragments.push(frag);
-            } else {
-                fragments.pop();
-                fragments.unshift(frag);
-            }
-        }
-
-        for (let i = 0; i < ranges.length; i++) {
-            ranges[i].insertNode(fragments[i]);
-        }
-
-        this.updateRegionOverlay();
-    }
-
-    updateRegionOverlay() {
-        const {top, bottom,
-               left, right} = this.store.scroll_region;
-
-        let upper = this.getCoordsAt(top, left);
-        let lower = this.getCoordsAt(bottom, right);
-
-        let w = lower.x + lower.width - upper.x;
-        let h = lower.y + lower.height - upper.y;
-
-        this.overlay.style.top  = upper.y + 'px';
-        this.overlay.style.left = upper.x + 'px';
-        this.overlay.style.width  = w + 'px';
-        this.overlay.style.height = h + 'px';
-    }
-
-    updateStyle () {
-        const {
-            fg_color, bg_color,
-            line_height,
-            font_attr} = this.store;
-        const {face, specified_px} = font_attr;
-
-        const heightPx = line_height * specified_px;
-
-        this.container.style.backgroundColor = bg_color;
-        this.container.style.fontFamily = face;
-        this.container.style.fontSize   = specified_px + 'px';
-        this.container.style.lineHeight = heightPx + 'px';
-
-        const rect = getFontSize(this.container);
-        const widthPx  = rect.width;
-
-        this.widthPx  = widthPx;
-        this.heightPx = heightPx;
-
-
-        this.grid.style.backgroundSize = `${widthPx}px, ${heightPx}px ${heightPx}px`;
-
-        this.pointer.style.width  = widthPx + 'px';
-        this.pointer.style.height = heightPx + 'px';
-
-        this.updateRegionOverlay();
-    }
-
-    resize (width_px: number, height_px: number) {
-        //const h = height_px * this.pixel_ratio;
-        //const w = width_px * this.pixel_ratio;
-        //const lines = Math.floor(h / this.store.font_attr.draw_height);
-        //const cols  = Math.floor(w / this.store.font_attr.draw_width);
-        //this.resizeImpl( lines, cols, w, h);
-    }
-
-    adjustLines (lines = this.store.size.lines) {
-        const children = this.container.children;
-
-        while (children.length < lines) {
-
-            let lineNode = document.createElement('div');
-            lineNode.classList.add('line', 'neovim-editor');
-
-            let span = this.newTag(null, null);
-
-            lineNode.appendChild(span);
-            this.container.appendChild(lineNode);
-
-            //fillLine(lineNode, cols);
-            log.debug('adjustLines(): added lineNode',
-                      lineNode.textContent.length,
-                      children.length);
-        }
-
-        while (children.length > lines) {
-            let node = this.container.lastChild;
-            this.container.removeChild(node);
-        }
-
-        log.debug('adjustLines(): final children.length:',
-                  children.length);
-        console.assert(children.length == lines);
-    }
-
 }
 
 export default class NeovimScreen {
     ctx: CanvasRenderingContext2D;
     txt: TextDisplay;
     display: HTMLElement;
-    cursor: Cursor;
+    //cursor: Cursor;
     input:  Input;
     pixel_ratio: number;
 
@@ -658,16 +680,13 @@ export default class NeovimScreen {
 
         this.display = this.txt.container;
 
-        this.store.on('put', this.drawText.bind(this));
-        this.store.on('clear-all', this.clearAll.bind(this));
-        this.store.on('clear-eol', this.clearEol.bind(this));
+        //this.store.on('put', this.drawText.bind(this));
+        //this.store.on('clear-all', this.clearAll.bind(this));
+        //this.store.on('clear-eol', this.clearEol.bind(this));
         // Note: 'update-bg' clears all texts in screen.
-        this.store.on('update-bg', this.clearAll.bind(this));
-        this.store.on('screen-scrolled', this.scroll.bind(this));
-        this.store.on('line-height-changed',
-            () => this.changeFontSize(this.store.font_attr.specified_px)
-        );
-
+        //this.store.on('update-bg', this.clearAll.bind(this));
+        //this.store.on('screen-scrolled', this.scroll.bind(this));
+        //this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
         this.changeFontSize(this.store.font_attr.specified_px);
 
         canvas.addEventListener('click', this.focus.bind(this));
@@ -676,7 +695,7 @@ export default class NeovimScreen {
         canvas.addEventListener('mousemove', this.mouseMove.bind(this));
         canvas.addEventListener('wheel', this.wheel.bind(this));
 
-        this.cursor = new Cursor(this.store, this.ctx);
+        //this.cursor = new Cursor(this.store, this.ctx);
         this.input = new Input(this.store);
     }
 
@@ -764,11 +783,6 @@ export default class NeovimScreen {
                 drawn_px * this.store.line_height
         );
 
-        this.display.style.fontSize   = specified_px + 'px';
-        this.display.style.fontFamily = this.store.font_attr.face;
-        this.display.style.lineHeight = this.store.line_height * specified_px + 'px';
-        this.display.style.minHeight  = this.store.line_height * specified_px + 'px';
-
         this.store.dispatcher.dispatch(A.updateFontPx(specified_px));
         this.store.dispatcher.dispatch(
             A.updateFontSize(
@@ -786,10 +800,10 @@ export default class NeovimScreen {
         this.store.dispatcher.dispatch(A.updateLineHeight(new_value));
     }
 
-    // Note:
-    //  cols_delta > 0 -> screen up
-    //  cols_delta < 0 -> screen down
-    scroll(cols_delta: number) {
+    /* Note:
+     *  cols_delta > 0 -> screen up
+     *  cols_delta < 0 -> screen down */
+    scroll(cols_delta: number) { 
         if (cols_delta > 0) {
             this.scrollUp(cols_delta);
         } else if (cols_delta < 0) {

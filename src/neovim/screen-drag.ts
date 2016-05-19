@@ -63,9 +63,16 @@ export default class ScreenDrag {
     }
 
     private getPos(e: MouseEvent) {
+
+        let pos = e as any;
+        if (pos.line && pos.col)
+            return [pos.line, pos.col];
+
         return [
-            Math.floor(e.clientY / this.store.font_attr.height),
-            Math.floor(e.clientX / this.store.font_attr.width),
+            //Math.floor(e.clientY / this.store.font_attr.height),
+            //Math.floor(e.clientX / this.store.font_attr.width),
+            Math.floor(e.y / this.store.font_attr.height),
+            Math.floor(e.x / this.store.font_attr.width),
         ];
     }
 }

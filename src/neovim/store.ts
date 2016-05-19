@@ -24,6 +24,7 @@ export interface Cursor {
 export interface FontAttributes {
     fg: string;
     bg: string;
+    sp: string;
     bold: boolean;
     italic: boolean;
     underline: boolean;
@@ -58,6 +59,7 @@ export default class NeovimStore extends EventEmitter {
     font_attr: FontAttributes;
     fg_color: string;
     bg_color: string;
+    sp_color: string;
     cursor: Cursor;
     mode: string;
     busy: boolean;
@@ -87,6 +89,7 @@ export default class NeovimStore extends EventEmitter {
         this.font_attr = {
             fg: 'white',
             bg: 'black',
+            sp: '',
             bold: false,
             italic: false,
             underline: false,
@@ -205,6 +208,12 @@ export default class NeovimStore extends EventEmitter {
                 this.bg_color = colorString(action.color, this.font_attr.bg);
                 this.emit('update-bg');
                 log.debug('Background color is updated: ' + this.bg_color);
+                break;
+            }
+            case Kind.UpdateSP: {
+                this.sp_color = colorString(action.color, this.font_attr.sp);
+                this.emit('update-sp');
+                log.debug('Special color is updated: ' + this.sp_color);
                 break;
             }
             case Kind.Mode: {
