@@ -32,22 +32,45 @@ export default class NeovimScreen {
         this.pixel_ratio = window.devicePixelRatio || 1;
         this.ctx = this.canvas.getContext('2d');
 
-        //this.store.on('put', this.drawText.bind(this));
-        //this.store.on('clear-all', this.clearAll.bind(this));
-        //this.store.on('clear-eol', this.clearEol.bind(this));
+        this.store.on('put', this.drawText.bind(this));
+        this.store.on('clear-all', this.clearAll.bind(this));
+        this.store.on('clear-eol', this.clearEol.bind(this));
         // Note: 'update-bg' clears all texts in screen.
-        //this.store.on('update-bg', this.clearAll.bind(this));
-        //this.store.on('screen-scrolled', this.scroll.bind(this));
-        //this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
+        this.store.on('update-bg', this.clearAll.bind(this));
+        this.store.on('screen-scrolled', this.scroll.bind(this));
+<<<<<<< Updated upstream
+        this.store.on(
+            'line-height-changed',
+            () => this.changeFontSize(this.store.font_attr.specified_px)
+        );
+
+<<<<<<< Updated upstream
+        this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
+=======
+=======
+        this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
         this.changeFontSize(this.store.font_attr.specified_px);
 
-        //canvas.addEventListener('click', this.focus.bind(this));
-        //canvas.addEventListener('mousedown', this.mouseDown.bind(this));
-        //canvas.addEventListener('mouseup', this.mouseUp.bind(this));
-        //canvas.addEventListener('mousemove', this.mouseMove.bind(this));
-        //canvas.addEventListener('wheel', this.wheel.bind(this));
+        canvas.addEventListener('click', this.focus.bind(this));
+        canvas.addEventListener('mousedown', this.mouseDown.bind(this));
+        canvas.addEventListener('mouseup', this.mouseUp.bind(this));
+        canvas.addEventListener('mousemove', this.mouseMove.bind(this));
+        canvas.addEventListener('wheel', this.wheel.bind(this));
+<<<<<<< Updated upstream
         //this.cursor = new Cursor(this.store, this.ctx);
-        //this.input = new Input(this.store);
+=======
+<<<<<<< Updated upstream
+=======
+        //this.cursor = new Cursor(this.store, this.ctx);
+        this.input = new Input(this.store);
+    }
+>>>>>>> Stashed changes
+
+        this.cursor = new Cursor(this.store, this.ctx);
+>>>>>>> Stashed changes
+        this.input = new Input(this.store);
     }
 
     convertPositionToLocation(line: number, col: number) {
@@ -151,10 +174,23 @@ export default class NeovimScreen {
         this.store.dispatcher.dispatch(A.updateLineHeight(new_value));
     }
 
+<<<<<<< Updated upstream
     /* Note:
      *  cols_delta > 0 -> screen up
      *  cols_delta < 0 -> screen down */
     scroll(cols_delta: number) { 
+=======
+<<<<<<< Updated upstream
+    // Note:
+    //  cols_delta > 0 -> screen up
+    //  cols_delta < 0 -> screen down
+=======
+    /* Note:
+     *  cols_delta > 0 -> screen up
+     *  cols_delta < 0 -> screen down */
+>>>>>>> Stashed changes
+    scroll(cols_delta: number) {
+>>>>>>> Stashed changes
         if (cols_delta > 0) {
             this.scrollUp(cols_delta);
         } else if (cols_delta < 0) {
