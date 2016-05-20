@@ -1,0 +1,101 @@
+/* !::exe [silent !npm run build-sass &]
+ * File: stylesheet.scss
+ */
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes blink {
+    0% {
+      opacity: 1.0;
+      /*animation-timing-function: ease-in;*/
+    }
+    49% {
+      opacity: 1.0;
+    }
+    50% {
+      opacity: 0.0;
+      /*animation-timing-function: ease-in-out;*/
+    }
+    99% {
+      opacity: 0.0;
+    }
+    100% {
+      opacity: 1.0;
+    }
+}
+
+.blink {
+    animation-name: blink;
+    animation-duration: 1.2s;
+    animation-iteration-count: infinite;
+}
+
+.overlay {
+  position: absolute;
+  pointer-events: none;
+}
+
+.neovim-cursor {
+    position: absolute;
+    padding: 0; margin: 0;
+    pointer-events: none;
+
+    border-width: 0;
+    border-style: solid;
+    box-sizing: border-box;
+
+    opacity: 0.5;
+    background-color: rgba(255,255,250,0.4);
+
+    &.focused {
+        border-width: 0;
+        /* border-style: none; */
+        /* border-color: white; */
+
+        &.insert-mode {
+            border-left-width: 1px;
+            border-left-style: solid;
+            background-color: transparent;
+            /* animation: blink; */
+        }
+        &.normal-mode, &.visual-mode {
+            background-color: rgba(255,255,250,0.4);
+            animation: none !important;
+        }
+    }
+
+    &:not(.focused) {
+        border-width: 1px;
+        border-style: solid;
+        background-color: transparent;
+        background: transparent;
+        animation: none !important;
+    }
+}
+
+.spacing {
+    cursor: initial;
+}
+
+.line {
+    /*position: relative;*/
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    min-height:  inherit !important;
+
+    .chars {
+        display: inline-block;
+        white-space: pre;
+        min-height:  inherit !important;
+    }
+
+}
+
+
+/*transition: all;*/
+/*transition-property: left;*/
+/*transition-duration: 0.04s;*/
+/*transition-timing-function: cubic-bezier(0.38, 0.75, 0.43, 0.88);*/
