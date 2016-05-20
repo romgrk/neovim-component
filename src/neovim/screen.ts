@@ -14,7 +14,7 @@ import log from '../log';
  *         .----------------→ x
  *  line 0 | a b c - d e ¬
  *  line 1 | f g ¬
- *  line 3 | 
+ *  line 3 |
  *       … |
  *         ↓
  *         y
@@ -38,19 +38,7 @@ export default class NeovimScreen {
         // Note: 'update-bg' clears all texts in screen.
         this.store.on('update-bg', this.clearAll.bind(this));
         this.store.on('screen-scrolled', this.scroll.bind(this));
-<<<<<<< Updated upstream
-        this.store.on(
-            'line-height-changed',
-            () => this.changeFontSize(this.store.font_attr.specified_px)
-        );
-
-<<<<<<< Updated upstream
         this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
-=======
-=======
-        this.store.on('line-height-changed', () => this.changeFontSize(this.store.font_attr.specified_px));
->>>>>>> Stashed changes
->>>>>>> Stashed changes
         this.changeFontSize(this.store.font_attr.specified_px);
 
         canvas.addEventListener('click', this.focus.bind(this));
@@ -58,18 +46,7 @@ export default class NeovimScreen {
         canvas.addEventListener('mouseup', this.mouseUp.bind(this));
         canvas.addEventListener('mousemove', this.mouseMove.bind(this));
         canvas.addEventListener('wheel', this.wheel.bind(this));
-<<<<<<< Updated upstream
         //this.cursor = new Cursor(this.store, this.ctx);
-=======
-<<<<<<< Updated upstream
-=======
-        //this.cursor = new Cursor(this.store, this.ctx);
-        this.input = new Input(this.store);
-    }
->>>>>>> Stashed changes
-
-        this.cursor = new Cursor(this.store, this.ctx);
->>>>>>> Stashed changes
         this.input = new Input(this.store);
     }
 
@@ -174,23 +151,10 @@ export default class NeovimScreen {
         this.store.dispatcher.dispatch(A.updateLineHeight(new_value));
     }
 
-<<<<<<< Updated upstream
     /* Note:
      *  cols_delta > 0 -> screen up
      *  cols_delta < 0 -> screen down */
-    scroll(cols_delta: number) { 
-=======
-<<<<<<< Updated upstream
-    // Note:
-    //  cols_delta > 0 -> screen up
-    //  cols_delta < 0 -> screen down
-=======
-    /* Note:
-     *  cols_delta > 0 -> screen up
-     *  cols_delta < 0 -> screen down */
->>>>>>> Stashed changes
     scroll(cols_delta: number) {
->>>>>>> Stashed changes
         if (cols_delta > 0) {
             this.scrollUp(cols_delta);
         } else if (cols_delta < 0) {
@@ -362,13 +326,14 @@ export default class NeovimScreen {
         if (width !== this.canvas.width) {
             this.canvas.width = width;
             this.canvas.style.width = (width / this.pixel_ratio) + 'px';
+
         }
         if (height !== this.canvas.height) {
             this.canvas.height = height;
             this.canvas.style.height = (height / this.pixel_ratio) + 'px';
         }
 
-        //this.store.dispatcher.dispatch(A.updateScreenSize(width, height));
-        //this.store.dispatcher.dispatch(A.updateScreenBounds(lines, cols));
+        this.store.dispatcher.dispatch(A.updateScreenSize(width, height));
+        this.store.dispatcher.dispatch(A.updateScreenBounds(lines, cols));
     }
 }
