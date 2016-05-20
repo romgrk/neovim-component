@@ -18,3 +18,6 @@ interface KeyboardEvent {
     code: string;
 }
 
+interface DOMTokenList {
+    forEach(callback: (token: any) => void): void;
+}
