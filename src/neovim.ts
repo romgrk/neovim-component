@@ -1,4 +1,5 @@
 import {EventEmitter} from 'events';
+import log from './log';
 import Process from './neovim/process';
 import Screen from './neovim/screen';
 import TextDisplay from './neovim/display';
@@ -12,7 +13,18 @@ import {
     changeCursorDrawDelay,
     startBlinkCursor,
 } from './neovim/actions';
-import {Nvim} from 'promised-neovim-client';
+
+let neovimModule: any;
+try {
+    const maybeNeovim = global.require('promised-neovim-client');
+    neovimModule = maybeNeovim;
+} catch(e) {
+    const nowNeovim = global.require('electron').remote.require('promised-neovim-client');
+    neovimModule = nowNeovim;
+    log.warn('Using remote promised-neovim-client module');
+}
+const {Nvim} = neovimModule;
+// import {Nvim} from 'promised-neovim-client';
 
 export default class Neovim extends EventEmitter {
     process: Process;
@@ -35,13 +47,11 @@ export default class Neovim extends EventEmitter {
         this.store.dispatcher.dispatch(updateLineHeight(line_height));
         this.store.dispatcher.dispatch(updateFontFace(font));
         this.store.dispatcher.dispatch(updateFontPx(font_size));
-        if (disable_alt_key) {
-            this.store.dispatcher.dispatch(disableAltKey(true));
-        }
         this.store.dispatcher.dispatch(changeCursorDrawDelay(draw_delay));
-        if (blink_cursor) {
+        if (blink_cursor)
             this.store.dispatcher.dispatch(startBlinkCursor());
-        }
+        if (disable_alt_key)
+            this.store.dispatcher.dispatch(disableAltKey(true));
 
         this.process = new Process(this.store, command, argv);
     }
@@ -51,22 +61,18 @@ export default class Neovim extends EventEmitter {
         this.screen = new TextDisplay(this.store, display);
         const {lines, cols} = this.store.size;
         this.process
-            .attach(lines, cols)
+            .attach(Math.max(lines, 10), Math.max(cols, 40))
             .then(() => {
                 this.process.client.on('disconnect', () => this.emit('quit'));
                 this.emit('process-attached');
-            }).catch(err => this.emit('error', err));
-    }
-
-    attachCanvas(width: number, height: number, canvas: HTMLCanvasElement) {
-        this.screen = new Screen(this.store, canvas);
+            }).catch((err: any) => this.emit('error', err));
     }
 
     quit() {
         this.process.finalize();
     }
 
-    getClient(): Nvim {
+    getClient() {
         return this.process.client;
     }
 

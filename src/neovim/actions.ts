@@ -6,6 +6,7 @@ export interface HighlightSet {
     foreground?: number;
     italic?: boolean;
     reverse?: boolean;
+    special?: number;
     sp?: string;
     undercurl?: boolean;
     underline?: boolean;
@@ -43,6 +44,8 @@ export enum Kind {
     SetTitle,
     StartBlinkCursor,
     StopBlinkCursor,
+    StartScreenUpdate,
+    EndScreenUpdate,
     UpdateBG,
     UpdateFG,
     UpdateSP,

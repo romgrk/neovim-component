@@ -26,7 +26,7 @@
     }
 }
 
-.blink {
+@mixin blink {
     animation-name: blink;
     animation-duration: 1.2s;
     animation-iteration-count: infinite;
@@ -37,7 +37,11 @@
   pointer-events: none;
 }
 
-.neovim-cursor {
+neovim-editor {
+  background-color: transparent;
+}
+
+#neovim-cursor {
     position: absolute;
     padding: 0; margin: 0;
     pointer-events: none;
@@ -46,56 +50,92 @@
     border-style: solid;
     box-sizing: border-box;
 
-    opacity: 0.5;
-    background-color: rgba(255,255,250,0.4);
+    /* opacity: 0.5; */
+    /* background-color: rgba(255,255,250,0.4); */
+    /* border-color: white; */
+
+    &.blink {
+        animation-name: blink;
+        animation-duration: 1.2s;
+        animation-iteration-count: infinite;
+    }
+
 
     &.focused {
-        border-width: 0;
-        /* border-style: none; */
-        /* border-color: white; */
-
-        &.insert-mode {
-            border-left-width: 1px;
-            border-left-style: solid;
-            background-color: transparent;
-            /* animation: blink; */
-        }
         &.normal-mode, &.visual-mode {
             background-color: rgba(255,255,250,0.4);
-            animation: none !important;
+            animation: none;
         }
     }
 
     &:not(.focused) {
         border-width: 1px;
-        border-style: solid;
-        background-color: transparent;
-        background: transparent;
+        /* border-style: solid; */
+        color:            transparent !important;
+        background-color: transparent !important;
         animation: none !important;
+        text-shadow: none;
+    }
+
+    &.insert-mode {
+        border-width: 0 0 0 2px;
+        color:            transparent !important;
+        background-color: transparent !important;
+        text-shadow: none;
+        /* @include blink; */
+        /* animation: blink; */
     }
 }
 
 .spacing {
-    cursor: initial;
+  cursor: default;
 }
 
-.line {
+.no-mouse {
+  cursor: none;
+}
+
+.undercurl {
+  position: relative;
+  &::after {
+    content: ' ';
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: inline-block;
+    border-bottom: 1px dashed blue;
+  }
+}
+
+.container {
+  text-shadow: 1px 1px rgba(0,0,0,0.30);
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: common-ligatures discretionary-ligatures historical-ligatures contextual;
+  -webkit-font-smoothing: antialiased;
+
+  & > div {
     /*position: relative;*/
+    /* overflow: hidden; */
     display: block;
-    overflow: hidden;
     white-space: nowrap;
-    min-height:  inherit !important;
+    min-height: inherit !important;
+  }
 
-    .chars {
-        display: inline-block;
-        white-space: pre;
-        min-height:  inherit !important;
-    }
-
+  & > div span {
+      display: inline-block;
+      white-space: pre;
+      letter-spacing: 0; // no justification
+      min-height:  inherit !important;
+  }
 }
 
+.vertsplit {
+  cursor: e-resize;
+}
 
 /*transition: all;*/
 /*transition-property: left;*/
 /*transition-duration: 0.04s;*/
 /*transition-timing-function: cubic-bezier(0.38, 0.75, 0.43, 0.88);*/
+/* box-shadow: rgba(255, 255, 255, 0.1) 0 1px 0,
+               rgba(0, 0, 0, 0.8) 0 1px 7px 0px inset; */

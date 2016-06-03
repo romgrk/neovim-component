@@ -7,7 +7,7 @@
     "preserveConstEnums": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "outDir": "./out"
+    "outDir": "../build/out"
   },
   "files": [
     "neovim/screen-wheel.ts",

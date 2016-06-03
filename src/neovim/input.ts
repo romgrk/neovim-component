@@ -7,6 +7,7 @@ const OnDarwin = global.process.platform === 'darwin';
 export default class NeovimInput {
     element: HTMLInputElement;
     ime_running: boolean;      // XXX: Local state!
+    ignore_focus: boolean;      // XXX: Local state!
 
     static shouldIgnoreOnKeydown(event: KeyboardEvent) {
         const {ctrlKey, shiftKey, altKey, keyCode} = event;
@@ -189,15 +190,19 @@ export default class NeovimInput {
 
     constructor(private store: NeovimStore) {
         this.ime_running = false;
+        this.ignore_focus = false;
 
         this.element = document.querySelector('.neovim-input') as HTMLInputElement;
+        if (this.element == null){
+            this.element = document.createElement('input');
+            this.element.classList.add('neovim-input');
+        }
         this.element.addEventListener('compositionstart', this.startComposition.bind(this));
         this.element.addEventListener('compositionend', this.endComposition.bind(this));
         this.element.addEventListener('keydown', this.onInputNonText.bind(this));
         this.element.addEventListener('input', this.onInputText.bind(this));
-        //this.element.addEventListener('blur', this.onBlur.bind(this));
+        this.element.addEventListener('blur', this.onBlur.bind(this));
         this.element.addEventListener('focus', this.onFocus.bind(this));
-        //this.store.on('cursor', this.updateElementPos.bind(this));
 
         this.focus();
     }
@@ -217,6 +222,9 @@ export default class NeovimInput {
     }
 
     onFocus() {
+        if (this.ignore_focus)
+            return;
+
         this.store.dispatcher.dispatch(notifyFocusChanged(true));
 
         // Note:
@@ -227,6 +235,9 @@ export default class NeovimInput {
     }
 
     onBlur(e: Event) {
+        if (this.ignore_focus)
+            return;
+
         e.preventDefault();
         this.store.dispatcher.dispatch(notifyFocusChanged(false));
 
@@ -331,5 +342,9 @@ export default class NeovimInput {
 
         this.element.style.left = x + 'px';
         this.element.style.top = y + 'px';
+    }
+
+    setIgnoreFocus (ignore: boolean) {
+        this.ignore_focus = ignore;
     }
 }

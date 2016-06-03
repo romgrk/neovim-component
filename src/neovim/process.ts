@@ -1,9 +1,13 @@
 // Note:
 // Use renderer's node.js integration to avoid using ipc for large data transfer
+const {remote} = global.require('electron');
+
 import cp = require('child_process');
-const child_process: typeof cp = global.require('child_process');
 import NvimClient = require('promised-neovim-client');
+
+const child_process: typeof cp = global.require('child_process');
 const attach = (global.require('promised-neovim-client') as typeof NvimClient).attach;
+
 import Action = require('./actions');
 import NeovimStore from './store';
 import log from '../log';
@@ -38,6 +42,7 @@ export default class NeovimProcess {
         let err: Error = null;
         this.client = null;
 
+        console.log('Spawning neovim...');
         this.neovim_process
             = child_process.spawn(
                 this.command,

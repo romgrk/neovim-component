@@ -76,6 +76,7 @@ export default class NeovimStore extends EventEmitter {
     cursor_draw_delay: number;
     blink_cursor: boolean;
     cursor_blink_interval: number;
+    updating_screen: boolean;
 
     constructor() {
         super();
@@ -124,6 +125,7 @@ export default class NeovimStore extends EventEmitter {
         this.cursor_draw_delay = 10;
         this.blink_cursor = true;
         this.cursor_blink_interval = 1000;
+        this.updating_screen = false;
         this.dispatch_token = this.dispatcher.register(this.receiveAction.bind(this));
     }
 
@@ -160,7 +162,9 @@ export default class NeovimStore extends EventEmitter {
                     this.font_attr.fg = colorString(hl.foreground, this.fg_color);
                     this.font_attr.bg = colorString(hl.background, this.bg_color);
                 }
-                log.debug('Highlight is updated: ', this.font_attr);
+                this.font_attr.sp = colorString(hl.special, hl.sp);
+                this.emit('highlight-changed');
+                log.debug('Highlight: ', this.font_attr);
                 break;
             }
             case Kind.FocusChanged: {
@@ -370,6 +374,21 @@ export default class NeovimStore extends EventEmitter {
                 this.blink_cursor = false;
                 if (changed) {
                     this.emit('blink-cursor-stopped');
+                }
+                break;
+            }
+            case Kind.StartScreenUpdate: {
+                const changed = this.updating_screen === true;
+                this.updating_screen = true;
+                if (changed)
+                    this.emit('screen-update-started');
+                break;
+            }
+            case Kind.EndScreenUpdate: {
+                const changed = this.updating_screen === false;
+                this.updating_screen = false;
+                if (changed) {
+                    this.emit('screen-updated');
                 }
                 break;
             }
